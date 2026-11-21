@@ -57,4 +57,19 @@ describe('pool page chain', () => {
     const fromWallet = /chain\?\.id\s*\|\||walletClient\??\.chain\b|updateOracle\(walletClient/;
     expect(lines.filter(({ line }) => fromWallet.test(line)).map(({ at }) => at)).toEqual([]);
   });
+
+  // The checks above look for the names. This one checks where their value comes from.
+  it('takes the pool chain from the link', () => {
+    expect(source).toContain('const poolChainId = resolvePoolChainId(params.get("chainId"));');
+    expect(source).toContain('usePool(poolId, poolChainId, isConnected)');
+    expect(source).toMatch(/const usePool = \(poolId: Address \| undefined, chainId: number \| null,/);
+    expect(source).toContain('const readChainId = chainId ?? undefined;');
+  });
+
+  it('switches the wallet to the pool chain', () => {
+    const switches = lines.filter(({ line }) => line.includes('switchChain({'));
+    expect(switches.length).toBeGreaterThan(0);
+    const toPoolChain = /switchChain\(\{ chainId: (poolChainId|poolData\.chainId) \}\)/;
+    expect(switches.filter(({ line }) => !toPoolChain.test(line)).map(({ at }) => at)).toEqual([]);
+  });
 });
